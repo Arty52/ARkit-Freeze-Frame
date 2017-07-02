@@ -5,6 +5,7 @@
 //  Created by Art Grichine on 7/1/17.
 //  Copyright © 2017 MAVA. All rights reserved.
 //
+// Reference: https://www.youtube.com/watch?v=LLRweyZ1KpA#t=247.5871678
 
 import UIKit
 import SceneKit
@@ -13,6 +14,7 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate {
 
     @IBOutlet var sceneView: ARSCNView!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,6 +30,10 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // Set the scene to the view
         sceneView.scene = scene
+        
+        // Add tap gesture to scene view
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        sceneView.addGestureRecognizer(tap)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -77,4 +83,27 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         // Reset tracking and/or remove existing anchors if consistent tracking is required
         
     }
+    
+    // MARK: Gestures
+    
+    @objc
+    func handleTap() {
+        guard let currentFrame = sceneView.session.currentFrame else { return }
+        
+        // Create an image plane using a snapshot of the view
+        let imagePlane = SCNPlane(width: sceneView.bounds.width / 6000,
+                                  height: sceneView.bounds.height / 6000)
+        imagePlane.firstMaterial?.diffuse.contents = sceneView.snapshot()
+        imagePlane.firstMaterial?.lightingModel = .constant
+        
+        // Create a plane node and add it to the scene
+        let planeNode = SCNNode(geometry: imagePlane)
+        sceneView.scene.rootNode.addChildNode(planeNode)
+        
+        // Set transform of node to be 10 cm in front of camera
+        var translation = matrix_identity_float4x4
+        translation.columns.3.z = -0.1
+        planeNode.simdTransform = matrix_multiply(currentFrame.camera.transform, translation)
+    }
+    
 }
